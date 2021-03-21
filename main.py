@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import os
 import pdfkit
 import html2text
+import json
 
 
 def name_from_url(url):
@@ -15,8 +16,9 @@ def name_from_url(url):
     return head_tail[1]
 
 
-def dump_tag(pkt, tag):
+def dump_tag(pkt, tag, urldict):
     matches = pkt.get(tag=tag, state="all")
+    urllist = []
     if matches:
         if not os.path.isdir(tag):
             os.mkdir(tag)
@@ -27,6 +29,7 @@ def dump_tag(pkt, tag):
         for match in sub_list.items():
             match = match[1]
             url = match['resolved_url']
+            urllist.append(url)
             print(f"{url}\n")
             fname = name_from_url(url)
 
@@ -76,6 +79,7 @@ def dump_tag(pkt, tag):
                         pdfkit.from_url(url, pname, options=options)
                     except:
                         print("PDFkit error occurred\n")
+    urldict[tag] = urllist
 
 
 p = Pocket(
@@ -83,6 +87,13 @@ p = Pocket(
  access_token='16751f51-3306-eb9c-66d0-ca57fb'
 )
 
-dump_tag(p, "practice")
-dump_tag(p, "lisp")
+urldict = {}
+if os.path.exists('tagdict.json'):
+    with open('tagdict.json') as json_file:
+        urldict = json.load(json_file)
 
+dump_tag(p, "practice", urldict)
+dump_tag(p, "lisp", urldict)
+
+with open('tagdict.json', 'w') as json_file:
+    json.dump(urldict, json_file)
