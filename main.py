@@ -16,6 +16,12 @@ def name_from_url(url):
     return head_tail[1]
 
 
+def dump_links(fname, matches):
+    with open(fname, "w") as fo:
+        for match in matches:
+            fo.write(f"{match['resolved_title']} - {match['resolved_url']}\n")
+
+
 def dump_tag(pkt, tag, urldict):
     matches = pkt.get(tag=tag, state="all")
     urllist = []
@@ -26,6 +32,8 @@ def dump_tag(pkt, tag, urldict):
             os.mkdir(os.path.join(tag, "html"))
             os.mkdir(os.path.join(tag, "text"))
         sub_list = matches[0]['list']
+        good_links = []
+        bad_links = []
         for match in sub_list.items():
             match = match[1]
             url = match['resolved_url']
@@ -79,7 +87,14 @@ def dump_tag(pkt, tag, urldict):
                         pdfkit.from_url(url, pname, options=options)
                     except:
                         print("PDFkit error occurred\n")
+            if urlmissing:
+                bad_links.append(match)
+            else:
+                good_links.append(match)
+
     urldict[tag] = urllist
+    dump_links(tag + ".good", good_links)
+    dump_links(tag + ".bad", bad_links)
 
 
 p = Pocket(
@@ -87,13 +102,13 @@ p = Pocket(
  access_token='16751f51-3306-eb9c-66d0-ca57fb'
 )
 
-urldict = {}
+urld = {}
 if os.path.exists('tagdict.json'):
     with open('tagdict.json') as json_file:
         urldict = json.load(json_file)
 
-dump_tag(p, "practice", urldict)
-dump_tag(p, "lisp", urldict)
+dump_tag(p, "practice", urld)
+dump_tag(p, "lisp", urld)
 
 with open('tagdict.json', 'w') as json_file:
-    json.dump(urldict, json_file)
+    json.dump(urld, json_file)
